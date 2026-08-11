@@ -64,14 +64,15 @@ The sequence includes auxiliary/voice IMEs when Android reports them as
 enabled. IMEs that keep language state internally or expose only one subtype
 cannot be subdivided by the framework API.
 
-## Drawable-based dynamic color (v1.4.0)
+## Dynamic color (v1.4.4)
 
-The bottom manager reads the current `InputMethodService` window decor
-background. When it is a `ColorDrawable` with alpha at least 192, the color is
-applied through the existing `setBottomColor(...)` path. Button tint is chosen
-as black or white from the background's RGB brightness. The update runs after
-the toolbar is attached and during compute-insets/layout updates.
+After `mInputFrame` has been laid out, the bottom manager draws that local IME
+view into a temporary ARGB bitmap and samples its bottom-centre pixel. This
+matches the keyboard's bottom background without requiring screenshot or
+cross-process capture permission. The sampled color is applied through the
+existing `setBottomColor(...)` path; icon tint is selected by RGB brightness.
 
-Transparent and non-`ColorDrawable` backgrounds retain the original toolbar
-theme. Image, gradient, and fully custom-drawn keyboard themes require a later
-PixelCopy sampling implementation.
+The `ColorDrawable` input-frame, root-view, and window-decor chain remains a
+fallback for zero-sized or non-drawable views. Sampling occurs after
+`changeViewForMiuiBottom()` has completed layout adjustment, not only when the
+toolbar is first attached.

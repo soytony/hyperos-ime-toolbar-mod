@@ -50,6 +50,11 @@ adb -s SERIAL shell "su -c '/data/adb/ksu/bin/ksud module install /data/local/tm
 adb -s SERIAL reboot
 ```
 
+The module includes `customize.sh` to set overlay directories to `0755`,
+APK/JAR payloads to `0644`, and lifecycle scripts to `0755` during installation.
+`post-fs-data.sh` applies the same settings idempotently at boot, so no manual
+permission repair is required after installation.
+
 ## Verification
 
 1. Check the module version after reboot.
@@ -62,3 +67,6 @@ adb -s SERIAL reboot
    the last subtype.
 5. Use `uiautomator dump` before screenshots for UI-state inspection.
 6. Inspect `logcat -b crash` for new Java crashes.
+7. For dynamic colors, identify the visible IME frame with `dumpsys window`
+   and use `tools/analyze_ime_colors.py` on a screenshot. The toolbar ROI is
+   the final band immediately above the navigation-bar inset.
