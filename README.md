@@ -18,8 +18,9 @@ switcher, and provides a next-enabled-IME action.
 
 ## Current reference release
 
-`v1.2.6` is the working reference release. It contains the universal toolbar,
-IME picker visibility fixes, and a generic cycle-next-enabled-IME action.
+`v1.2.7` is the working reference release. It contains the universal toolbar,
+IME picker visibility fixes, a generic cycle-next-enabled-IME action, and an
+Android-native current-IME language/subtype action.
 
 Do not re-sign any overlaid APK or JAR. The target device must already accept
 the modified system artifacts without certificate replacement.

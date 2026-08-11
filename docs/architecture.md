@@ -29,6 +29,11 @@ The module uses KernelSU Hybrid Mount to overlay these files:
 - `switchKeyboardType()` gets Android's enabled IME list, finds the current
   secure setting `default_input_method`, wraps to the next entry, and calls
   `InputMethodService.switchInputMethod(nextId)`.
+- `switchKeyboardLanguage()` calls
+  `InputMethodService.switchToNextInputMethod(true)`. The `true` argument asks
+  Android to remain in the current IME and advance its subtype/language. This
+  replaces Xiaomi's private `SWITCH_KEYBOARD_LANGUAGE` broadcast, which Gboard
+  does not handle.
 
 `services.jar`
 
@@ -46,3 +51,11 @@ WeChat Input Method because it declares
 `mSupportsSwitchingToNextInputMethod=false`. Calling the public API therefore
 did not switch. Direct list/index selection remains framework-mediated,
 wraps predictably, and works across IMEs.
+
+## Current language-action limitation
+
+The `v1.2.7` language action only advances within the active IME. If the IME
+has one framework-visible subtype, the action has no visible result. It also
+does not continue into the next IME after the active IME's languages have been
+visited. A future implementation may flatten enabled `(IME, subtype)` pairs
+into one circular sequence.

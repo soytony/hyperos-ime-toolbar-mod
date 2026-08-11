@@ -15,6 +15,8 @@ Known working functional state:
 - Full-screen IME toolbar is visible for Gboard and WeChat Input Method.
 - Toolbar picker can switch WeChat Input Method to Gboard.
 - Cycle keyboard selects the next enabled IME directly.
+- Switch language invokes Android's current-IME subtype rotation. It only has
+  a visible effect when the active IME exposes multiple enabled subtypes.
 
 When debugging, distinguish these failure classes:
 

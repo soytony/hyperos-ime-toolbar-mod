@@ -57,5 +57,7 @@ adb -s SERIAL reboot
    Gboard. Confirm Gboard becomes current and WeChat does not crash.
 3. Set the toolbar action to cycle keyboard. Confirm repeated presses traverse
    every enabled IME and wrap at the end.
-4. Use `uiautomator dump` before screenshots for UI-state inspection.
-5. Inspect `logcat -b crash` for new Java crashes.
+4. Enable at least two languages in an IME, set the action to switch language,
+   and confirm it advances the current IME subtype without changing IME.
+5. Use `uiautomator dump` before screenshots for UI-state inspection.
+6. Inspect `logcat -b crash` for new Java crashes.
