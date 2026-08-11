@@ -60,8 +60,9 @@ def main():
     bottom = min(bottom, nav_top(wt, image.shape[0]))
     if x2 <= x1 or bottom <= top:
         raise SystemExit("IME window is not visible; focus an editable field before capturing")
-    # Scan horizontal bands near the bottom. A toolbar is a uniform band followed by
-    # a distinct lower area; selecting the last such transition avoids fixed coords.
+    # Scan horizontal bands near the bottom. HyperOS places its toolbar directly
+    # above the navigation-bar inset. The final color transition before that inset
+    # therefore marks the toolbar top; the preceding band is keyboard content.
     ys = range(top, max(top, bottom - 20), 4)
     rows = []
     for y in ys:
@@ -69,16 +70,16 @@ def main():
         rows.append((y, np.median(a, axis=0)))
     diffs = [(rows[i][0], float(np.linalg.norm(rows[i][1]-rows[i-1][1]))) for i in range(1,len(rows))]
     cuts = [y for y,d in diffs if d > 12]
-    toolbar_end = cuts[-1] if cuts else bottom
-    toolbar_start = max(top, toolbar_end - 100)
-    toolbar = stats(image, (x1, toolbar_start, x2, toolbar_end))
-    lower = stats(image, (x1, toolbar_end, x2, bottom)) if bottom-toolbar_end >= 20 else None
-    result = {"ime_rect": [x1, top, x2, bottom], "toolbar": toolbar, "lower_ime": lower}
+    toolbar_start = cuts[-1] if cuts else max(top, bottom - 100)
+    keyboard_start = max(top, toolbar_start - 100)
+    toolbar = stats(image, (x1, toolbar_start, x2, bottom))
+    keyboard = stats(image, (x1, keyboard_start, x2, toolbar_start)) if toolbar_start-keyboard_start >= 20 else None
+    result = {"ime_rect": [x1, top, x2, bottom], "toolbar": toolbar, "keyboard_above_toolbar": keyboard}
     print(json.dumps(result, ensure_ascii=True, indent=2))
     if args.annotated:
         out = image.copy()
-        cv2.rectangle(out, (x1, toolbar_start), (x2, toolbar_end), (0, 0, 255), 5)
-        cv2.rectangle(out, (x1, toolbar_end), (x2, bottom), (255, 0, 0), 5)
+        cv2.rectangle(out, (x1, keyboard_start), (x2, toolbar_start), (255, 0, 0), 5)
+        cv2.rectangle(out, (x1, toolbar_start), (x2, bottom), (0, 0, 255), 5)
         cv2.imwrite(str(args.annotated), out)
 
 
