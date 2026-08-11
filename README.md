@@ -18,9 +18,11 @@ switcher, and provides a next-enabled-IME action.
 
 ## Current reference release
 
-`v1.3.0` is the working reference release. It contains the universal toolbar,
+`v1.4.0` is the working reference release. It contains the universal toolbar,
 IME picker visibility fixes, a generic cycle-next-enabled-IME action, and a
-flattened `(IME, subtype)` language cycle.
+flattened `(IME, subtype)` language cycle. It also applies a current-IME
+`ColorDrawable` background to the toolbar when a sufficiently opaque color is
+available.
 
 Do not re-sign any overlaid APK or JAR. The target device must already accept
 the modified system artifacts without certificate replacement.

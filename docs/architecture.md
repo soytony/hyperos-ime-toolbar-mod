@@ -63,3 +63,15 @@ subtype are represented by a null/default subtype.
 The sequence includes auxiliary/voice IMEs when Android reports them as
 enabled. IMEs that keep language state internally or expose only one subtype
 cannot be subdivided by the framework API.
+
+## Drawable-based dynamic color (v1.4.0)
+
+The bottom manager reads the current `InputMethodService` window decor
+background. When it is a `ColorDrawable` with alpha at least 192, the color is
+applied through the existing `setBottomColor(...)` path. Button tint is chosen
+as black or white from the background's RGB brightness. The update runs after
+the toolbar is attached and during compute-insets/layout updates.
+
+Transparent and non-`ColorDrawable` backgrounds retain the original toolbar
+theme. Image, gradient, and fully custom-drawn keyboard themes require a later
+PixelCopy sampling implementation.

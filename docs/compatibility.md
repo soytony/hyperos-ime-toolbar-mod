@@ -17,6 +17,8 @@ Known working functional state:
 - Cycle keyboard selects the next enabled IME directly.
 - Switch language invokes Android's current-IME subtype rotation. It only has
   a visible effect when the active IME exposes multiple enabled subtypes.
+- Dynamic toolbar color works when the current IME decor exposes an opaque
+  `ColorDrawable`; unsupported drawable types safely retain the stock color.
 
 When debugging, distinguish these failure classes:
 
