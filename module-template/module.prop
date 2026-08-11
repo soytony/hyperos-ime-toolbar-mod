@@ -1,0 +1,6 @@
+id=hyperos_ime_toolbar_adaptive
+name=HyperOS IME Toolbar Adaptive Patcher
+version=0.1.0-dev
+versionCode=100
+author=Tony / Codex
+description=Profile-driven device-side smali patcher for the HyperOS IME toolbar.

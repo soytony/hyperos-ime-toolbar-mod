@@ -1,72 +1,42 @@
 # Build And Install
 
-## Preconditions
+## Prerequisites
 
-- `apktool`, `zip`, `unzip`, `adb`, and a working KernelSU installation.
-- Original target files extracted from the exact device build.
-- A device environment that accepts the modified system artifacts while
-  retaining their original certificate entries.
+- Java, `javac`, D8/R8, `zip`, and `unzip` on the host.
+- apktool 3.x JAR, arm64 `aapt2`, and arm64 `zipalign` in `out/tools/`.
+- A rooted HyperOS 3.0+ arm64 device with KernelSU.
 
-Never use a rebuilt APK as the final payload directly. Rebuilding changes the
-archive and discards the original signature files. Instead, extract its dex
-and update a copy of the original archive.
-
-## Rebuild and inject dex
+Build the device helper and module:
 
 ```sh
-apktool b decoded/MiuiFrequentPhrase -o out/MiuiFrequentPhrase-rebuilt.apk
-unzip -o out/MiuiFrequentPhrase-rebuilt.apk classes.dex -d out/inject-phrase
-cp apks/MiuiFrequentPhrase.apk module/product/app/MiuiFrequentPhrase/MiuiFrequentPhrase.apk
-(cd out/inject-phrase && \
-  zip -j ../../module/product/app/MiuiFrequentPhrase/MiuiFrequentPhrase.apk classes.dex)
-
-apktool b decoded/services -o out/services-rebuilt.jar
-unzip -o out/services-rebuilt.jar 'classes*.dex' -d out/inject-services
-(cd out/inject-services && \
-  zip -j ../../module/system/framework/services.jar classes*.dex)
+sh tools/build_device_apktool.sh
+sh tools/build_adaptive_module.sh \
+  profile-sets/hyperos3-arm64-3.0 \
+  out/hyperos-ime-toolbar-adaptive.zip
 ```
 
-Do not add `-FS` while updating an APK/JAR with dex files. It can prune
-unmatched entries and remove resources. `-FS` is appropriate only when making
-the outer flashable module ZIP from the complete module directory.
+The builder copies only the template, profile set, patcher, helper JAR, and
+required binaries into the ZIP. It does not embed device APK/JAR payloads.
 
-## Verify preserved entries
+## Install
 
 ```sh
-unzip -p apks/MiuiFrequentPhrase.apk META-INF/CERT.RSA | sha256sum
-unzip -p module/product/app/MiuiFrequentPhrase/MiuiFrequentPhrase.apk META-INF/CERT.RSA | sha256sum
-unzip -p apks/MiuiFrequentPhrase.apk META-INF/MANIFEST.MF | sha256sum
-unzip -p module/product/app/MiuiFrequentPhrase/MiuiFrequentPhrase.apk META-INF/MANIFEST.MF | sha256sum
+adb -s SERIAL push out/hyperos-ime-toolbar-adaptive.zip /sdcard/Download/
 ```
 
-The corresponding pairs must match.
+Install the ZIP from KernelSU. During installation, read the bilingual warning
+and use volume up to enable signature-proof patching or volume down to skip it.
+Reboot after installation. Never manually replace or resign the target APK/JAR.
 
-## Package and install
+## Verify
 
-```sh
-(cd module && zip -r -FS ../out/hyperos-ime-bottom-universal-vX.Y.Z.zip .)
-adb -s SERIAL push out/hyperos-ime-bottom-universal-vX.Y.Z.zip /data/local/tmp/ime-mod.zip
-adb -s SERIAL shell "su -c '/data/adb/ksu/bin/ksud module install /data/local/tmp/ime-mod.zip'"
-adb -s SERIAL reboot
-```
+1. Confirm the module is enabled and its installer report contains four target
+   archives.
+2. Use UIAutomator to confirm the `com.miui.phrase` toolbar window exists.
+3. Test Gboard, WeChat Input Method, keyboard cycling, and language cycling.
+4. Inspect `logcat -b crash` for regressions.
+5. For color changes, validate the visible IME frame with
+   `tools/analyze_ime_colors.py` after locating it using `dumpsys window`.
 
-The module includes `customize.sh` to set overlay directories to `0755`,
-APK/JAR payloads to `0644`, and lifecycle scripts to `0755` during installation.
-`post-fs-data.sh` applies the same settings idempotently at boot, so no manual
-permission repair is required after installation.
-
-## Verification
-
-1. Check the module version after reboot.
-2. Set WeChat Input Method as current and use the toolbar picker to select
-   Gboard. Confirm Gboard becomes current and WeChat does not crash.
-3. Set the toolbar action to cycle keyboard. Confirm repeated presses traverse
-   every enabled IME and wrap at the end.
-4. Enable at least two languages in an IME, set the action to switch language,
-   and confirm it advances subtypes, then enters the next enabled IME after
-   the last subtype.
-5. Use `uiautomator dump` before screenshots for UI-state inspection.
-6. Inspect `logcat -b crash` for new Java crashes.
-7. For dynamic colors, identify the visible IME frame with `dumpsys window`
-   and use `tools/analyze_ime_colors.py` on a screenshot. The toolbar ROI is
-   the final band immediately above the navigation-bar inset.
+If the device boot-loops, disable the module from KernelSU safe mode before
+attempting another profile or signature-proof choice.

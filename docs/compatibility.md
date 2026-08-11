@@ -1,30 +1,21 @@
 # Compatibility And Risks
 
-The reference device is a POCO 2510DPC44G (`annibale`) running HyperOS
-`OS3.0.307.0.WPKCNXM`, Android 16 / SDK 36.
+The current profile set targets HyperOS 3.0+ on arm64. It is intentionally not
+bound to a device product or build fingerprint. Compatibility is determined at
+install time by platform checks and by successful signature/anchor matching.
 
-This is not a generic Android module. Method names, dex layout, Android API
-behavior, Xiaomi package filtering, and archive contents can differ per ROM
-release. Port every patch from the target build's decoded artifacts.
+HyperOS releases may rename classes, move them between DEX files, change
+method prototypes, or alter local instruction context. Such changes must fail
+closed and require a new profile; they must not be handled by broad textual
+replacement.
 
-The module intentionally changes input-method package visibility and
-privileged switching behavior. Keep it restricted to a trusted device.
+The module overlays privileged system code and changes IME visibility and
+switching behavior. Existing package certificates are preserved, but a ROM
+that enforces system APK signature proof may reject modified code unless its
+signature-proof behavior is already patched or the installer option is
+enabled.
 
-Known working functional state:
-
-- Full-screen IME toolbar is visible for Gboard and WeChat Input Method.
-- Toolbar picker can switch WeChat Input Method to Gboard.
-- Cycle keyboard selects the next enabled IME directly.
-- Switch language invokes Android's current-IME subtype rotation. It only has
-  a visible effect when the active IME exposes multiple enabled subtypes.
-- Dynamic toolbar color works when the current IME decor exposes an opaque
-  `ColorDrawable`; unsupported drawable types safely retain the stock color.
-
-When debugging, distinguish these failure classes:
-
-- Toolbar missing: check that the overlaid `MiuiFrequentPhrase.apk` still
-  contains resources and was not reduced to only dex entries.
-- Gboard selection crashes WeChat: inspect `Unknown id` in `logcat`; this
-  indicates server-side visibility validation remains active.
-- Cycle action does nothing: do not assume `switchToNextInputMethod()` works
-  on this HyperOS build; inspect the enabled list and use direct list cycling.
+Manual validation is required for every new HyperOS release. The reference
+functional expectations are: toolbar creation for third-party IMEs, switching
+between enabled IMEs, language traversal across `(IME, subtype)` pairs, and
+dynamic toolbar color updates after IME layout.
