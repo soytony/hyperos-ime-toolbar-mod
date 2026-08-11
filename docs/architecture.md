@@ -52,10 +52,14 @@ WeChat Input Method because it declares
 did not switch. Direct list/index selection remains framework-mediated,
 wraps predictably, and works across IMEs.
 
-## Current language-action limitation
+## Flattened language cycle (v1.3.0)
 
-The `v1.2.7` language action only advances within the active IME. If the IME
-has one framework-visible subtype, the action has no visible result. It also
-does not continue into the next IME after the active IME's languages have been
-visited. A future implementation may flatten enabled `(IME, subtype)` pairs
-into one circular sequence.
+The `v1.3.0` language action treats enabled IMEs and their framework-visible
+subtypes as one circular sequence. It advances within the current IME when a
+next subtype exists; after the last subtype it selects the next enabled IME and
+its first subtype, wrapping to the first IME at the end. IMEs with no exposed
+subtype are represented by a null/default subtype.
+
+The sequence includes auxiliary/voice IMEs when Android reports them as
+enabled. IMEs that keep language state internally or expose only one subtype
+cannot be subdivided by the framework API.

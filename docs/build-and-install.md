@@ -58,6 +58,7 @@ adb -s SERIAL reboot
 3. Set the toolbar action to cycle keyboard. Confirm repeated presses traverse
    every enabled IME and wrap at the end.
 4. Enable at least two languages in an IME, set the action to switch language,
-   and confirm it advances the current IME subtype without changing IME.
+   and confirm it advances subtypes, then enters the next enabled IME after
+   the last subtype.
 5. Use `uiautomator dump` before screenshots for UI-state inspection.
 6. Inspect `logcat -b crash` for new Java crashes.
