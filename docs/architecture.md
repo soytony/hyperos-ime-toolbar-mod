@@ -89,3 +89,10 @@ a bounded circular pass. It skips only subtypes for which `getMode()` returns
 exactly `voice`; other modes, including handwriting and vendor-defined values,
 are retained. An IME with no exposed subtypes may still be selected with its
 default subtype, while an IME exposing only voice subtypes is skipped.
+
+Toolbar haptics are injected into the action listener `onClick(View)` methods,
+not into fixed left/right containers. Each supported action therefore calls
+`View.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)` wherever it
+is assigned. This path needs no vibration permission and respects Android's
+system haptic-feedback setting. The covered listeners are input-method switch,
+keyboard cycle, language cycle, voice input, and clipboard/frequent phrases.

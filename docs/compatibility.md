@@ -20,4 +20,6 @@ functional expectations are: toolbar creation for third-party IMEs, switching
 between enabled IMEs, language traversal across `(IME, subtype)` pairs, and
 dynamic toolbar color updates after IME layout. When a default voice IME is
 configured, the voice shortcut must switch to that exact service from both
-Gboard and WeChat Input Method without crashing either IME process.
+Gboard and WeChat Input Method without crashing either IME process. Both
+toolbar positions must also produce system-controlled haptic feedback for
+every supported shortcut assignment when touch feedback is enabled.

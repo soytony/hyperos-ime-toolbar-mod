@@ -34,8 +34,10 @@ Reboot after installation. Never manually replace or resign the target APK/JAR.
    archives.
 2. Use UIAutomator to confirm the `com.miui.phrase` toolbar window exists.
 3. Test Gboard, WeChat Input Method, keyboard cycling, and language cycling.
-4. Inspect `logcat -b crash` for regressions.
-5. For color changes, validate the visible IME frame with
+4. Assign each supported shortcut to both toolbar positions and manually
+   confirm keyboard-tap haptic feedback with system touch feedback enabled.
+5. Inspect `logcat -b crash` for regressions.
+6. For color changes, validate the visible IME frame with
    `tools/analyze_ime_colors.py` after locating it using `dumpsys window`.
 
 If the device boot-loops, disable the module from KernelSU safe mode before

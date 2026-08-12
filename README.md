@@ -56,6 +56,15 @@ Toolbar and shortcut-button backgrounds update immediately, with contrasting
 normal/pressed colors selected for readability. Sampling is event-driven and
 does not continuously capture the screen or require screenshot permission.
 
+### 按钮触觉反馈 / Shortcut haptic feedback
+
+Both toolbar shortcut buttons provide a keyboard-tap haptic response when
+pressed, regardless of which side or supported action is assigned. This covers
+input-method switching, keyboard cycling, language cycling, voice input, and
+the clipboard/frequent-phrase panel. The implementation uses Android view
+haptic feedback, requires no `VIBRATE` permission, and follows the user's
+system haptic-feedback setting.
+
 The module is installation-time adaptive: it decodes each device's mounted
 APK/JAR with apktool, locates configured classes and methods by signature,
 patches smali, rebuilds only the changed DEX entries, and preserves all
