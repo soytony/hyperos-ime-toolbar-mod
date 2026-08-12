@@ -22,6 +22,14 @@ current IME, then continues with the first language of the next enabled IME;
 after the final IME it wraps back to the first pair. IMEs without exposed
 subtypes still participate using their default subtype.
 
+### 剪贴板和常用语 / Clipboard and frequent phrases
+
+The toolbar's clipboard and frequent-phrase panel works with any enabled IME.
+Copied content continues to be collected by Xiaomi's existing clipboard
+manager; a targeted provider-access profile only removes the original IME
+package allowlist that otherwise prevents a third-party IME from reading that
+already-recorded history.
+
 ### 自动动态取色 / Automatic dynamic color sampling
 
 When the toolbar is attached or its layout/settings change, the patch samples

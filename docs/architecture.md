@@ -26,7 +26,8 @@ method is absent or ambiguous.
 - `services.jar`: exposes enabled IMEs and accepts the direct target-switch
   path used by the toolbar.
 - `MiuiFrequentPhrase.apk`: creates the toolbar, removes its IME allowlist,
-  cycles IMEs/languages, and updates toolbar colors.
+  permits enabled IMEs to read the existing clipboard/frequent-phrase
+  provider, cycles IMEs/languages, and updates toolbar colors.
 
 ## Matching rules
 
@@ -46,6 +47,15 @@ contain a match are selected for replacement.
 `classes*.dex` entries only. `ArchiveVerifier` requires every non-DEX entry to
 retain its name, size, and CRC; this includes `META-INF/CERT.*`. `zipalign`
 rewrites ZIP layout but does not resign the package.
+
+## Clipboard provider access
+
+`MiuiClipboardManager` retains responsibility for observing and persisting
+clipboard entries. The `phrase-provider-allowlist` profile replaces only
+`InputProvider.c()Z`, the provider's caller-package allowlist predicate, with
+an allow result. This lets the toolbar process running under an enabled
+third-party IME read its existing clipboard and frequent-phrase history. It
+does not alter clipboard data, listener registration, or the UI query logic.
 
 ## Runtime behavior
 

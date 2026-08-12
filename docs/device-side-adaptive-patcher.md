@@ -43,6 +43,8 @@ Its replacement payload is smali inside the existing method declaration. The
 patcher preserves the method name, access flags, parameters, and return type.
 It requires exactly one matching class/method and does not hash the original
 method body, allowing compatible implementation differences between releases.
+For example, `phrase-provider-allowlist` replaces the body of
+`InputProvider.c()Z` while preserving its original declaration.
 
 Instruction-level operations must declare a stable local anchor. They verify
 the enclosing method or instruction sequence before changing registers or
