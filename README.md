@@ -75,8 +75,8 @@ hash.
 ## Repository layout
 
 - `module-template/`: KernelSU installer, runtime property, and service files.
-- `profile-sets/hyperos3-arm64-3.0/`: current generic HyperOS 3.0+ arm64
-  profiles and target paths.
+- `profile-sets/hyperos3-arm64-3.0/`: current adaptive arm64 profiles and
+  target paths for installer-recognized HyperOS 3, 4, and 5 releases.
 - `tools/adaptive_patcher.sh`: device/host patch orchestration.
 - `tools/device-java/`: apktool wrapper, smali patcher, DEX injector, and
   archive verifier.
@@ -88,9 +88,12 @@ hash.
 
 ## Build
 
-Required local inputs are the pinned apktool JAR, arm64 `aapt2`, arm64
-`zipalign`, and a Java/D8 toolchain. Place the device binaries under
-`out/tools/`, then run:
+Required local inputs are apktool 3.0.3, arm64 `aapt2`, arm64 `zipalign`, a
+JDK, and R8/D8. The module builder expects the bundled device artifacts at
+`out/tools/apktool-device.jar`, `out/tools/aapt2-arm64-v8a`, and
+`out/tools/zipalign-arm64-v8a`. Building `apktool-device.jar` also requires
+`out/tools/apktool_3.0.3.jar` and an R8 JAR; see
+`docs/build-and-install.md` for the exact commands and path overrides.
 
 ```sh
 sh tools/build_device_apktool.sh
@@ -108,7 +111,7 @@ manually validated on the target ROM.
 
 This project has been tested only on the following environment:
 
-- Device: POCO 2510DPC44G
+- Device: REDMI K90 / POCO F8 Pro
 - System: HyperOS `OS3.0.307.0.WPKCNXM`
 - Android: Android 16 / SDK 36
 - Architecture: arm64-v8a
@@ -117,11 +120,14 @@ Other device models, regional ROM variants, and HyperOS releases have not been
 validated unless explicitly documented. Users must test compatibility on
 their own devices and be prepared to recover the system before installation.
 
-The installer rejects non-HyperOS 3.0+ and non-arm64 devices. Before patching,
-it asks with the volume keys whether to apply the optional system APK
-signature-proof patch. EU/custom ROMs may already contain that modification.
-Changing system APKs without the required signature behavior can cause a boot
-loop; keep KernelSU safe mode available.
+The current installer accepts arm64 devices whose reported HyperOS version
+starts with `OS3.`, `OS4.`, or `OS5.`. A newer major release requires an
+explicit installer-check update and renewed profile validation. Before
+patching, the installer asks with the volume keys whether to apply the optional
+system APK signature-proof patch. Volume up enables it; volume down skips it,
+and no input within 20 seconds also skips it. EU/custom ROMs may already contain
+that modification. Changing system APKs without the required signature
+behavior can cause a boot loop; keep KernelSU safe mode available.
 
 If the device boot-loops, use KernelSU safe mode to disable or remove this
 module before rebooting normally. Confirm that safe-mode recovery is available

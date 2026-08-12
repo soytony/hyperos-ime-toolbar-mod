@@ -1,8 +1,12 @@
 # Compatibility And Risks
 
-The current profile set targets HyperOS 3.0+ on arm64. It is intentionally not
-bound to a device product or build fingerprint. Compatibility is determined at
-install time by platform checks and by successful signature/anchor matching.
+The current installer explicitly recognizes HyperOS version strings beginning
+with `OS3.`, `OS4.`, or `OS5.` on arm64. This is not a promise of compatibility
+with every build in those families: the profile set is intentionally not bound
+to a device product or build fingerprint, and compatibility is determined at
+install time by platform checks plus successful method-signature and local
+anchor matching. A future HyperOS major requires an installer-check update and
+fresh profile validation.
 
 HyperOS releases may rename classes, move them between DEX files, change
 method prototypes, or alter local instruction context. Such changes must fail
@@ -15,11 +19,22 @@ that enforces system APK signature proof may reject modified code unless its
 signature-proof behavior is already patched or the installer option is
 enabled.
 
-Manual validation is required for every new HyperOS release. The reference
-functional expectations are: toolbar creation for third-party IMEs, switching
-between enabled IMEs, language traversal across `(IME, subtype)` pairs, and
-dynamic toolbar color updates after IME layout. When a default voice IME is
-configured, the voice shortcut must switch to that exact service from both
-Gboard and WeChat Input Method without crashing either IME process. Both
-toolbar positions must also produce system-controlled haptic feedback for
-every supported shortcut assignment when touch feedback is enabled.
+Manual validation is required for every new device and HyperOS release. The
+only fully tested environment is REDMI K90 / POCO F8 Pro, HyperOS
+`OS3.0.307.0.WPKCNXM`, Android 16 / SDK 36, arm64-v8a. On that environment the
+following have been manually confirmed with Gboard and WeChat Input Method:
+
+- Toolbar creation for third-party/enabled IMEs.
+- Input-method selection and wraparound keyboard cycling.
+- Cross-IME `(IME, subtype)` language traversal, excluding only subtypes whose
+  mode is exactly `voice`.
+- Routing to the current user's exact system default voice IME without crashing
+  the source IME.
+- Clipboard and frequent-phrase access.
+- Dynamic toolbar background/control colors.
+- Keyboard-tap haptic feedback for all five actions in either toolbar position.
+
+Other devices, ROM regions, and builds remain untested. A boot loop must be
+recovered by disabling/removing the module through KernelSU safe mode. The
+project and its owner provide no warranty and accept no responsibility for
+device damage, data loss, or downtime.

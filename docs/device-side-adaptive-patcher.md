@@ -13,14 +13,15 @@ The module bundles these arm64/device-capable tools:
 
 | Tool | Purpose | Source |
 | --- | --- | --- |
-| apktool 3.0.3 | Decode and rebuild smali/DEX | `iBotPeaches/Apktool` |
-| aapt2 arm64 | apktool build dependency | `ReVanced/aapt2` |
-| zipalign arm64 | Align final APK/JAR | `termux-zipalign` |
-| device helper JAR | Text patching and archive verification | this repository |
+| `apktool-device.jar` (apktool 3.0.3 + helpers) | Decode, patch, rebuild, inject, and verify | `iBotPeaches/Apktool` + this repository |
+| `aapt2-arm64-v8a` | apktool build dependency | `ReVanced/aapt2` |
+| `zipalign-arm64-v8a` | Align final APK/JAR | `termux-zipalign` |
 
-The helper JAR contains apktool plus Android-compatible classes built through
-D8. R8/D8 is a host build dependency only; target application code is never
-decompiled to Java.
+The device JAR contains apktool plus repository helper classes and
+Android-compatible DEX built through D8. Its host build requires apktool 3.0.3,
+a JDK, `jar`, `zip`, and an R8 JAR providing D8. R8/D8 is a host build
+dependency only; target application code is decoded and patched directly as
+smali and is never decompiled to Java.
 
 ## Profile model
 
@@ -58,6 +59,9 @@ a volume-key choice:
 - Volume up: enable the optional patch.
 - Volume down: skip it.
 
+The installer waits up to 20 seconds. If no supported key event is detected,
+the option defaults to skip.
+
 The patch searches decoded `services.jar` smali for calls to:
 
 ```text
@@ -84,10 +88,13 @@ assembler path, while original certificate entries remain untouched.
 
 ## Installer checks and logging
 
-The installer requires `ro.mi.os.version.name` to identify HyperOS 3.0 or
-newer and requires an arm64 ABI. Target paths must exist. Every profile must
-resolve uniquely. Progress, choices, success, and errors are displayed in
-Chinese and English with blank lines between major phases.
+The current installer accepts `ro.mi.os.version.name` values beginning with
+`OS3.`, `OS4.`, or `OS5.` and requires an arm64 ABI. This explicit allowlist
+prevents an unknown future major from being treated as validated. Target paths
+must exist and every profile must resolve uniquely. The current plan patches
+four artifacts: `Settings.apk`, `miui-framework.jar`, `services.jar`, and
+`MiuiFrequentPhrase.apk`. Progress, choices, success, and errors are displayed
+in Chinese and English with blank lines between major phases.
 
 ## Maintenance checklist
 
@@ -96,10 +103,11 @@ Chinese and English with blank lines between major phases.
 - [x] Require exact method signatures for whole-method replacement.
 - [x] Require local instruction context for partial edits.
 - [x] Replace only patched DEX entries and preserve certificates.
-- [x] Check HyperOS 3.0+ and arm64 before decode.
+- [x] Check recognized HyperOS majors (OS3/OS4/OS5) and arm64 before decode.
 - [x] Offer signature-proof patching through volume keys with boot-risk warning.
 - [x] Configure module and payload permissions during installation.
 - [ ] Add host fixtures for every profile operation.
 - [ ] Add negative fixtures for missing, duplicate, and changed local anchors.
-- [ ] Validate installation, reboot, toolbar creation, and all actions manually.
-- [ ] Commit only after explicit manual confirmation.
+- [x] Validate installation, reboot, toolbar creation, and all actions manually
+  on REDMI K90 / POCO F8 Pro / OS3.0.307.0.WPKCNXM.
+- [x] Commit device behavior changes only after explicit manual confirmation.

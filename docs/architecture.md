@@ -4,7 +4,7 @@
 
 ```text
 KernelSU customize.sh
-  -> validate HyperOS 3.0+ and arm64
+  -> validate recognized HyperOS major (OS3/OS4/OS5) and arm64
   -> volume-key choice for signature-proof patch
   -> validate target paths
   -> apktool decode
@@ -23,12 +23,17 @@ method is absent or ambiguous.
 
 - `Settings.apk`: enables the IME bottom-support path.
 - `miui-framework.jar`: enables support from `InputMethodServiceInjector`.
-- `services.jar`: exposes enabled IMEs and accepts the direct target-switch
-  path used by the toolbar. It also resolves the toolbar's private voice
-  sentinel to the current user's system default voice IME.
-- `MiuiFrequentPhrase.apk`: creates the toolbar, removes its IME allowlist,
-  permits enabled IMEs to read the existing clipboard/frequent-phrase
-  provider, cycles IMEs/languages, and updates toolbar colors.
+- `services.jar`: exposes the complete enabled-IME list, removes the
+  `supportsSwitchingToNextInputMethod()` capability filter, routes direct and
+  next-IME switches through switching-aware rotation logic, and updates user
+  action/recency state. It also resolves the toolbar's private voice sentinel
+  to the current user's system default voice IME and narrowly permits that
+  exact target when it is absent from the ordinary enabled list.
+- `MiuiFrequentPhrase.apk`: creates and exposes the toolbar for any enabled
+  IME, removes package/provider allowlists, exposes enabled IMEs to the toolbar,
+  cycles IMEs, traverses subtypes across IMEs, routes voice and clipboard
+  actions, samples dynamic colors, and provides haptic feedback for all five
+  shortcut actions.
 
 ## Matching rules
 
@@ -80,9 +85,21 @@ system default voice IME. All other disabled or unknown IDs remain rejected.
 ## Runtime behavior
 
 `system.prop` enables the HyperOS bottom view and `service.sh` sets the secure
-enable flag after boot. Toolbar color sampling is event-driven after layout
-and uses the rendered IME input frame; controls update immediately without
-animated interpolation.
+enable flag after boot. Keyboard cycling reads the enabled IME list, finds the
+current entry from `default_input_method`, selects the next entry with
+wraparound, and calls `InputMethodService.switchInputMethod(nextId)`. It does
+nothing when fewer than two IMEs are enabled.
+
+Toolbar color sampling runs on attachment, layout changes, and toolbar
+function/settings changes. When `mInputFrame` has valid dimensions, the helper
+renders the complete frame into an ARGB bitmap and samples the pixel at its
+horizontal center and `height - 5`. If rendering is unavailable, it tries
+`ColorDrawable` backgrounds in this order: input frame, root view, then IME
+window decor. Samples with alpha below `0xc0` are rejected. The selected
+background is made opaque, black or white icon colors are chosen using an RGB
+sum threshold of `0x180`, and `setBottomColor(true, bg, normal, pressed)` is
+called immediately. There is no animated interpolation and no continuous
+screen capture.
 
 The language-cycle action traverses enabled IMEs and their enabled subtypes in
 a bounded circular pass. It skips only subtypes for which `getMode()` returns
@@ -92,7 +109,8 @@ default subtype, while an IME exposing only voice subtypes is skipped.
 
 Toolbar haptics are injected into the action listener `onClick(View)` methods,
 not into fixed left/right containers. Each supported action therefore calls
-`View.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)` wherever it
-is assigned. This path needs no vibration permission and respects Android's
+`View.performHapticFeedback(3)`, where `3` is
+`HapticFeedbackConstants.KEYBOARD_TAP`, wherever it is assigned. This path
+needs no vibration permission and respects Android's
 system haptic-feedback setting. The covered listeners are input-method switch,
 keyboard cycle, language cycle, voice input, and clipboard/frequent phrases.
