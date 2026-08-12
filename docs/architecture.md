@@ -24,7 +24,8 @@ method is absent or ambiguous.
 - `Settings.apk`: enables the IME bottom-support path.
 - `miui-framework.jar`: enables support from `InputMethodServiceInjector`.
 - `services.jar`: exposes enabled IMEs and accepts the direct target-switch
-  path used by the toolbar.
+  path used by the toolbar. It also resolves the toolbar's private voice
+  sentinel to the current user's system default voice IME.
 - `MiuiFrequentPhrase.apk`: creates the toolbar, removes its IME allowlist,
   permits enabled IMEs to read the existing clipboard/frequent-phrase
   provider, cycles IMEs/languages, and updates toolbar colors.
@@ -56,6 +57,25 @@ clipboard entries. The `phrase-provider-allowlist` profile replaces only
 an allow result. This lets the toolbar process running under an enabled
 third-party IME read its existing clipboard and frequent-phrase history. It
 does not alter clipboard data, listener registration, or the UI query logic.
+
+## Default voice IME routing
+
+The toolbar code in `MiuiFrequentPhrase.apk` cannot safely read the hidden
+`default_voice_input_method` secure setting because it executes inside the
+active third-party IME process and therefore uses that IME's UID. It sends the
+private ID `#hyperos-ime-toolbar:default-voice` through the existing
+`InputMethodService.switchInputMethod()` path instead.
+
+`services-switch-target` resolves this sentinel at the start of
+`setInputMethodAndSubtypeLocked()` by calling
+`InputMethodSettings.getDefaultVoiceInputMethod()` for the target user. This
+must happen before the method-map lookup, which rejects unknown IDs. The
+resolved real IME ID then follows the normal switch path.
+
+Voice-only IMEs may be absent from Android's ordinary enabled-IME list. The
+`services-voice-target` profile preserves the normal enabled check and adds
+one exception: a requested ID is also accepted when it exactly equals the
+system default voice IME. All other disabled or unknown IDs remain rejected.
 
 ## Runtime behavior
 

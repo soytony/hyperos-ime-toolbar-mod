@@ -30,6 +30,21 @@ manager; a targeted provider-access profile only removes the original IME
 package allowlist that otherwise prevents a third-party IME from reading that
 already-recorded history.
 
+### 系统默认语音输入 / System default voice input
+
+The toolbar's voice-input action delegates target selection to
+`system_server`. The IME-side toolbar sends a module-private sentinel instead
+of reading restricted secure settings or guessing the first installed voice
+IME. `system_server` resolves that sentinel with
+`InputMethodSettings.getDefaultVoiceInputMethod()` and switches to the exact
+voice IME configured for the current user.
+
+The framework exception is narrowly scoped: the resolved default voice IME
+may be selected even when it is not present in the ordinary enabled-IME list.
+Other disabled or unknown IMEs remain rejected. This behavior has been
+manually verified from both Gboard and WeChat Input Method on the tested
+device.
+
 ### 自动动态取色 / Automatic dynamic color sampling
 
 When the toolbar is attached or its layout/settings change, the patch samples

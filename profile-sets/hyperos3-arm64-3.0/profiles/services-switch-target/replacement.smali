@@ -10,6 +10,19 @@
 
     move-result-object v2
 
+    const-string v3, "#hyperos-ime-toolbar:default-voice"
+
+    invoke-static {p1, v3}, Landroid/text/TextUtils;->equals(Ljava/lang/CharSequence;Ljava/lang/CharSequence;)Z
+
+    move-result v3
+
+    if-eqz v3, :voice_target_resolved
+
+    invoke-virtual {v2}, Lcom/android/server/inputmethod/InputMethodSettings;->getDefaultVoiceInputMethod()Ljava/lang/String;
+
+    move-result-object p1
+
+    :voice_target_resolved
     invoke-virtual {v2}, Lcom/android/server/inputmethod/InputMethodSettings;->getMethodMap()Lcom/android/server/inputmethod/InputMethodMap;
 
     move-result-object v3
