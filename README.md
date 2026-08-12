@@ -20,7 +20,10 @@ The “switch language” action walks one circular sequence of enabled
 `(input-method, subtype)` pairs. It advances to the next language inside the
 current IME, then continues with the first language of the next enabled IME;
 after the final IME it wraps back to the first pair. IMEs without exposed
-subtypes still participate using their default subtype.
+subtypes still participate using their default subtype. Subtypes whose mode is
+exactly `voice` are excluded from this action so voice input remains available
+through its dedicated toolbar button; handwriting and vendor-defined subtype
+modes remain eligible.
 
 ### 剪贴板和常用语 / Clipboard and frequent phrases
 

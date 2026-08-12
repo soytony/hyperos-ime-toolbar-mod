@@ -83,3 +83,9 @@ system default voice IME. All other disabled or unknown IDs remain rejected.
 enable flag after boot. Toolbar color sampling is event-driven after layout
 and uses the rendered IME input frame; controls update immediately without
 animated interpolation.
+
+The language-cycle action traverses enabled IMEs and their enabled subtypes in
+a bounded circular pass. It skips only subtypes for which `getMode()` returns
+exactly `voice`; other modes, including handwriting and vendor-defined values,
+are retained. An IME with no exposed subtypes may still be selected with its
+default subtype, while an IME exposing only voice subtypes is skipped.
