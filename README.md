@@ -72,6 +72,11 @@ non-DEX archive entries including existing certificates. It never resigns
 system packages and does not identify a device by product name or whole-file
 hash.
 
+The Xiaomi frequent-phrase APK is located by package ID
+`com.miui.phrase` through `pm path` at install time, rather than by assuming a
+specific partition directory or filename. This accommodates vendor naming
+variants such as `MiuiFrequentPhrase.apk` and `MIUIXxxx.apk`.
+
 ## Repository layout
 
 - `module-template/`: KernelSU installer, runtime property, and service files.

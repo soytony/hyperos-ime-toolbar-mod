@@ -35,6 +35,10 @@ method is absent or ambiguous.
   actions, samples dynamic colors, and provides haptic feedback for all five
   shortcut actions.
 
+The phrase artifact is resolved by package ID (`com.miui.phrase`) with `pm
+path`, rather than by a hard-coded partition path or filename. This supports
+vendor renames and relocation while retaining an explicit identity check.
+
 ## Matching rules
 
 Whole-method replacement requires the complete smali method signature:

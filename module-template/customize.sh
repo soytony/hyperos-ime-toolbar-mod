@@ -49,8 +49,22 @@ else
 fi
 
 ui_print "- 检查目标文件与 profiles / Validating targets and profiles"
+resolve_source() {
+  source_spec=$1
+  case "$source_spec" in
+    @package:*)
+      package=${source_spec#@package:}
+      resolved=$(pm path "$package" 2>/dev/null | sed -n 's/^package://p' | awk '/\.apk$/ {print; exit}')
+      [ -n "$resolved" ] || abort "找不到 package / Package not found: $package"
+      [ -f "$resolved" ] || abort "APK 路径不存在 / APK path missing: $resolved"
+      printf '%s' "$resolved"
+      ;;
+    *) printf '%s' "$source_spec" ;;
+  esac
+}
 while IFS='|' read -r source profiles; do
   case "$source" in ''|'#'*) continue ;; esac
+  source=$(resolve_source "$source")
   [ -f "$source" ] || abort "Missing target: $source"
   [ -n "$profiles" ] || abort "No profiles configured for $source"
 done < "$SET/plan.conf"
@@ -59,6 +73,7 @@ ui_print "- 应用 smali profiles（4 个文件）/ Applying profiles (4 artifac
 artifact_index=0
 while IFS='|' read -r source profiles; do
   case "$source" in ''|'#'*) continue ;; esac
+  source=$(resolve_source "$source")
   artifact_index=$((artifact_index + 1))
   if [ "$source" = /system/framework/services.jar ] && [ -n "$signature_profiles" ]; then
     profiles=signature-proof,$profiles

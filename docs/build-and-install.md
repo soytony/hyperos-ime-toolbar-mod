@@ -42,7 +42,7 @@ resign the target APK/JAR.
 
 1. Confirm the module is enabled and its installer report contains the current
    profile set's four target archives: `Settings.apk`, `miui-framework.jar`,
-   `services.jar`, and `MiuiFrequentPhrase.apk`.
+   `services.jar`, and the APK resolved from package `com.miui.phrase`.
 2. Use `dumpsys input_method` to confirm that the active IME is shown, then use
    `dumpsys window` to locate the `InputMethod` window and its bounds. The
    toolbar is embedded in the active IME window/process; it is not necessarily

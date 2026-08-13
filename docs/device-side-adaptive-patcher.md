@@ -25,11 +25,18 @@ smali and is never decompiled to Java.
 
 ## Profile model
 
-`plan.conf` maps an absolute system path to comma-separated profile names:
+`plan.conf` maps an absolute system path (or a package locator) to
+comma-separated profile names:
 
 ```text
 /system/framework/services.jar|services-enabled-list,services-switch-target
+@package:com.miui.phrase|phrase-support,phrase-cycle-language
 ```
+
+Package locators are resolved during installation with `pm path` and select the
+installed APK, so directory and filename differences such as
+`MiuiFrequentPhrase.apk` versus `MIUIXxxx.apk` do not matter. The package ID is
+still an explicit identity anchor; missing or unresolved packages fail closed.
 
 A whole-method profile contains:
 
@@ -92,8 +99,9 @@ The current installer accepts `ro.mi.os.version.name` values beginning with
 `OS3.`, `OS4.`, or `OS5.` and requires an arm64 ABI. This explicit allowlist
 prevents an unknown future major from being treated as validated. Target paths
 must exist and every profile must resolve uniquely. The current plan patches
-four artifacts: `Settings.apk`, `miui-framework.jar`, `services.jar`, and
-`MiuiFrequentPhrase.apk`. Progress, choices, success, and errors are displayed
+four artifacts: `Settings.apk`, `miui-framework.jar`, `services.jar`, and the
+APK resolved from package `com.miui.phrase`. Progress, choices, success, and
+errors are displayed
 in Chinese and English with blank lines between major phases.
 
 ## Maintenance checklist
