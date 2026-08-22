@@ -54,6 +54,16 @@ method body, allowing compatible implementation differences between releases.
 For example, `phrase-provider-allowlist` replaces the body of
 `InputProvider.c()Z` while preserving its original declaration.
 
+`expected_matches` styles are explicit:
+
+- A non-negative number requires exactly that many matching method declarations.
+- `all` is supported by all-occurrence operations such as
+  `replace-method-result-all`; every matching anchor is patched and at least
+  one match is required. The signature-proof profile uses `all` because a ROM
+  may invoke the verifier more than once.
+- `all` is rejected for whole-method operations, where replacing every body
+  would be ambiguous and unsafe.
+
 Instruction-level operations must declare a stable local anchor. They verify
 the enclosing method or instruction sequence before changing registers or
 instructions. Missing and ambiguous matches are errors.
@@ -76,9 +86,14 @@ ApkSignatureVerifier.getMinimumSignatureSchemeVersionForTargetSdk(I)I
 ```
 
 For every match, the next non-empty instruction must be `move-result vN`. The
-patch retains that instruction and inserts `const/4 vN, 0x0`. The register is
-derived from the local context. EU/custom ROMs may already contain equivalent
+generic result override operation retains that instruction and inserts a typed
+constant for the configured return type/value. The register is derived from the
+local context. EU/custom ROMs may already contain equivalent
 behavior; users should normally skip the option in that case.
+
+On failure, the installer reports the artifact, profile, target file, operation,
+and match condition, then prints recent diagnostic lines. The complete log is
+retained at the artifact work directory as `work/tool.log`.
 
 ## DEX and ZIP handling
 
@@ -95,8 +110,10 @@ assembler path, while original certificate entries remain untouched.
 
 ## Installer checks and logging
 
-The current installer accepts `ro.mi.os.version.name` values beginning with
-`OS3.`, `OS4.`, or `OS5.` and requires an arm64 ABI. This explicit allowlist
+The current installer requires an arm64 ABI and recognizes
+`ro.mi.os.version.name` values beginning with `OS3.` as its validated path.
+Other versions show a warning and require an explicit volume-up confirmation
+before patching is attempted. This explicit validation boundary
 prevents an unknown future major from being treated as validated. Target paths
 must exist and every profile must resolve uniquely. The current plan patches
 four artifacts: `Settings.apk`, `miui-framework.jar`, `services.jar`, and the
@@ -111,7 +128,7 @@ in Chinese and English with blank lines between major phases.
 - [x] Require exact method signatures for whole-method replacement.
 - [x] Require local instruction context for partial edits.
 - [x] Replace only patched DEX entries and preserve certificates.
-- [x] Check recognized HyperOS majors (OS3/OS4/OS5) and arm64 before decode.
+- [x] Require arm64 before decode; warn and require confirmation outside HyperOS 3.
 - [x] Offer signature-proof patching through volume keys with boot-risk warning.
 - [x] Configure module and payload permissions during installation.
 - [ ] Add host fixtures for every profile operation.

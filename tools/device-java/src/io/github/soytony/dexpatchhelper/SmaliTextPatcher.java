@@ -1,4 +1,4 @@
-package io.github.hyperosime;
+package io.github.soytony.dexpatchhelper;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -12,21 +12,26 @@ public final class SmaliTextPatcher {
         File target = new File(args[1]);
         String text = read(target);
         String result;
-        switch (args[0]) {
-            case "replace-method":
-                result = replaceMethod(text, args[2], read(new File(args[3])));
-                break;
-            case "replace-text":
-                result = replaceExactlyOnce(text, read(new File(args[2])), read(new File(args[3])));
-                break;
-            case "insert-before-method":
-                result = insertBeforeMethod(text, args[2], read(new File(args[3])));
-                break;
-            case "reset-signature-result":
-                result = resetSignatureResult(text, args[2]);
-                break;
-            default:
-                throw new IllegalArgumentException("unsupported mode: " + args[0]);
+        try {
+            switch (args[0]) {
+                case "replace-method":
+                    result = replaceMethod(text, args[2], read(new File(args[3])));
+                    break;
+                case "replace-text":
+                    result = replaceExactlyOnce(text, read(new File(args[2])), read(new File(args[3])));
+                    break;
+                case "insert-before-method":
+                    result = insertBeforeMethod(text, args[2], read(new File(args[3])));
+                    break;
+                case "replace-method-result":
+                    if (args.length < 5) throw new IllegalArgumentException("replace-method-result requires ANCHOR RETURN_TYPE VALUE");
+                    result = replaceMethodResult(text, args[2], args[3], args[4]);
+                    break;
+                default:
+                    throw new IllegalArgumentException("unsupported mode: " + args[0]);
+            }
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("target=" + target.getPath() + ", mode=" + args[0] + ": " + e.getMessage(), e);
         }
         Files.write(target.toPath(), result.getBytes(StandardCharsets.UTF_8));
     }
@@ -72,8 +77,16 @@ public final class SmaliTextPatcher {
         return text.substring(0, first) + newText + text.substring(first + oldText.length());
     }
 
-    /** Replace each verified signature-scheme result with zero, retaining move-result for verifier correctness. */
-    private static String resetSignatureResult(String text, String invokeAnchor) {
+    /** Replace each verified method result with a typed constant. */
+    private static String replaceMethodResult(String text, String invokeAnchor, String returnType, String value) {
+        if (!(returnType.equals("I") || returnType.equals("Z") || returnType.equals("B")
+                || returnType.equals("S") || returnType.equals("C"))) {
+            throw new IllegalArgumentException("unsupported result type for const/4: " + returnType);
+        }
+        int parsed;
+        try { parsed = Integer.decode(value); }
+        catch (NumberFormatException e) { throw new IllegalArgumentException("invalid integer value: " + value); }
+        if (parsed < -8 || parsed > 7) throw new IllegalArgumentException("value out of const/4 range (-8..7): " + value);
         String[] lines = text.split("\\n", -1);
         int matches = 0;
         for (int i = 0; i < lines.length; i++) {
@@ -81,12 +94,12 @@ public final class SmaliTextPatcher {
             int resultLine = i + 1;
             while (resultLine < lines.length && lines[resultLine].trim().isEmpty()) resultLine++;
             if (resultLine >= lines.length || !lines[resultLine].trim().matches("move-result v[0-9]+"))
-                throw new IllegalArgumentException("signature invoke has no adjacent move-result");
+                throw new IllegalArgumentException("method invoke has no adjacent move-result: " + invokeAnchor);
             String reg = lines[resultLine].trim().replaceFirst("move-result (v[0-9]+)", "$1");
-            lines[resultLine] = lines[resultLine] + "\n    const/4 " + reg + ", 0x0";
+            lines[resultLine] = lines[resultLine] + "\n    const/4 " + reg + ", " + (parsed == 0 ? "0x0" : Integer.toString(parsed));
             matches++;
         }
-        if (matches == 0) throw new IllegalArgumentException("signature invoke not found: " + invokeAnchor);
+        if (matches == 0) throw new IllegalArgumentException("method invoke not found: " + invokeAnchor);
         return String.join("\n", lines);
     }
 

@@ -10,11 +10,11 @@ BUILD=$ROOT/out/device-java-build
 rm -rf "$BUILD"
 mkdir -p "$BUILD/classes" "$BUILD/dex"
 javac --release 8 -cp "$APKTOOL" -d "$BUILD/classes" \
-  "$ROOT"/tools/device-java/src/io/github/hyperosime/*.java
+  "$ROOT"/tools/device-java/src/io/github/soytony/dexpatchhelper/*.java
 jar cf "$BUILD/helper.jar" -C "$BUILD/classes" .
 java -cp "$R8_JAR" com.android.tools.r8.D8 --min-api 26 \
   --output "$BUILD/dex" "$APKTOOL" "$BUILD/helper.jar"
 cp "$APKTOOL" "$OUT"
-(cd "$BUILD/classes" && jar uf "$OUT" io/github/hyperosime)
+(cd "$BUILD/classes" && jar uf "$OUT" io/github/soytony/dexpatchhelper)
 (cd "$BUILD/dex" && zip -q -0 "$OUT" classes.dex)
 sha256sum "$OUT"

@@ -9,6 +9,15 @@ usage() {
 }
 
 die() { echo "adaptive-patcher 错误 / ERROR: $*" >&2; exit 1; }
+fail_with_log() {
+  message=$1
+  echo "[错误/ERROR] $message" >&2
+  if [ -s "$tool_log" ]; then
+    echo "[详细日志/DETAILS] $tool_log" >&2
+    tail -80 "$tool_log" >&2
+  fi
+  exit 1
+}
 progress() {
   case "$1" in
     1/6) cn='解码 APK/JAR' ;;
@@ -68,7 +77,7 @@ get_profile() {
 
 apktool_run() {
   if [ "$device" = 1 ]; then
-    dalvikvm -Duser.home="$workdir/home" -cp "$apktool" io.github.hyperosime.DeviceApktoolMain "$@"
+    dalvikvm -Duser.home="$workdir/home" -cp "$apktool" io.github.soytony.dexpatchhelper.DeviceApktoolMain "$@"
   else
     java -jar "$apktool" "$@"
   fi
@@ -115,14 +124,17 @@ for profile_dir in $profiles; do
   method_sig=$(get_profile "$profile_dir" method)
   operation=$(get_profile "$profile_dir" operation)
   expected=$(get_profile "$profile_dir" expected_matches)
-  [ "$expected" = 1 ] || die "expected_matches must be 1"
-  if [ "$operation" = reset-signature-result-all ]; then
+  case "$expected" in
+    all) : ;;
+    ''|*[!0-9]*) die "profile $profile_dir has invalid expected_matches='$expected' (use a non-negative integer or all)" ;;
+  esac
+  if [ "$operation" = replace-method-result-all ]; then
     anchor=$(get_profile "$profile_dir" anchor)
     class_file=$(grep -rlF "$anchor" "$decode_dir" --include='*.smali' 2>/dev/null | sed -n '1p')
   else
     class_file=$(find "$decode_dir" -type f -name "$(basename "$class_name").smali" -path "*${class_name%/*}/*" -print -quit 2>/dev/null)
   fi
-  [ -n "$class_file" ] || die "class file not found for $profile_dir: $class_name"
+  [ -n "$class_file" ] || die "profile $profile_dir: target anchor/class not found ($class_name, $method_sig)"
   class_relative=${class_file#"$decode_dir"/}
   smali_dir=${class_relative%%/*}
   case "$smali_dir" in
@@ -134,11 +146,23 @@ for profile_dir in $profiles; do
     *,$target_dex,*) ;;
     *) target_dexes=${target_dexes:+$target_dexes,}$target_dex ;;
   esac
-  if [ "$operation" = reset-signature-result-all ]; then
-    method_count=1
+  if [ "$operation" = replace-method-result-all ]; then
+    anchor_count=0
+    candidate_list=$workdir/candidates.txt
+    find "$decode_dir" -type f -name '*.smali' -print > "$candidate_list"
+    while IFS= read -r candidate; do
+      count=$(grep -Fo "$anchor" "$candidate" 2>/dev/null | wc -l | tr -d ' ')
+      anchor_count=$((anchor_count + count))
+    done < "$candidate_list"
+    method_count=$anchor_count
+    if [ "$expected" != all ] && [ "$method_count" -ne "$expected" ]; then
+      die "profile $profile_dir operation $operation: found $method_count anchor invocation(s), expected exactly $expected"
+    fi
+    [ "$method_count" -gt 0 ] || die "profile $profile_dir operation $operation: no anchor invocations found"
   else
     method_count=$(awk -v sig="$method_sig" '$0 ~ "^\\.method " && substr($0, length($0)-length(sig), length(sig)+1) == " " sig { count++ } END { print count + 0 }' "$class_file")
-    [ "$method_count" = "$expected" ] || die "profile $profile_dir method $method_sig match count $method_count, expected $expected"
+    [ "$expected" != all ] || die "profile $profile_dir method $method_sig: expected_matches=all is only supported by all-occurrence operations"
+    [ "$method_count" = "$expected" ] || die "profile $profile_dir method $method_sig: found $method_count method(s), expected exactly $expected"
   fi
   progress 'PATCH' "$(basename "$profile_dir"): $class_name->$method_sig"
 
@@ -151,27 +175,32 @@ for profile_dir in $profiles; do
   case "$operation" in
     replace-method)
       [ -s "$profile_dir/replacement.smali" ] || die "missing replacement.smali"
-      java_helper io.github.hyperosime.SmaliTextPatcher replace-method "$class_file" "$method_sig" "$profile_dir/replacement.smali"
+      java_helper io.github.soytony.dexpatchhelper.SmaliTextPatcher replace-method "$class_file" "$method_sig" "$profile_dir/replacement.smali" >> "$tool_log" 2>&1 || fail_with_log "profile=$profile_dir file=$class_relative operation=$operation failed"
       ;;
     replace-text)
       [ -s "$profile_dir/old.smali" ] && [ -f "$profile_dir/new.smali" ] || die "missing old.smali or new.smali"
-      java_helper io.github.hyperosime.SmaliTextPatcher replace-text "$class_file" "$profile_dir/old.smali" "$profile_dir/new.smali"
+      java_helper io.github.soytony.dexpatchhelper.SmaliTextPatcher replace-text "$class_file" "$profile_dir/old.smali" "$profile_dir/new.smali" >> "$tool_log" 2>&1 || fail_with_log "profile=$profile_dir file=$class_relative operation=$operation failed"
       ;;
     insert-before-method)
       [ -s "$profile_dir/insertion.smali" ] || die "missing insertion.smali"
-      java_helper io.github.hyperosime.SmaliTextPatcher insert-before-method "$class_file" "$method_sig" "$profile_dir/insertion.smali"
+      java_helper io.github.soytony.dexpatchhelper.SmaliTextPatcher insert-before-method "$class_file" "$method_sig" "$profile_dir/insertion.smali" >> "$tool_log" 2>&1 || fail_with_log "profile=$profile_dir file=$class_relative operation=$operation failed"
       ;;
-    reset-signature-result)
+    replace-method-result)
       anchor=$(get_profile "$profile_dir" anchor)
-      java_helper io.github.hyperosime.SmaliTextPatcher reset-signature-result "$class_file" "$anchor"
+      return_type=$(get_profile "$profile_dir" return_type)
+      value=$(get_profile "$profile_dir" value)
+      java_helper io.github.soytony.dexpatchhelper.SmaliTextPatcher replace-method-result "$class_file" "$anchor" "$return_type" "$value" >> "$tool_log" 2>&1 || fail_with_log "profile=$profile_dir file=$class_relative operation=$operation failed"
       ;;
-    reset-signature-result-all)
+    replace-method-result-all)
       anchor=$(get_profile "$profile_dir" anchor)
+      return_type=$(get_profile "$profile_dir" return_type)
+      value=$(get_profile "$profile_dir" value)
       candidate_list=$workdir/candidates.txt
       find "$decode_dir" -type f -name '*.smali' -print > "$candidate_list"
       while IFS= read -r candidate; do
         if grep -Fq "$anchor" "$candidate"; then
-          java_helper io.github.hyperosime.SmaliTextPatcher reset-signature-result "$candidate" "$anchor"
+          candidate_relative=${candidate#"$decode_dir"/}
+          java_helper io.github.soytony.dexpatchhelper.SmaliTextPatcher replace-method-result "$candidate" "$anchor" "$return_type" "$value" >> "$tool_log" 2>&1 || fail_with_log "profile=$profile_dir file=$candidate_relative operation=$operation failed"
           rel=${candidate#"$decode_dir"/}; dir=${rel%%/*}
           case "$dir" in smali) d=classes.dex ;; smali_classes[0-9]*) d=classes${dir#smali_classes}.dex ;; esac
           case ",$target_dexes," in *,$d,*) ;; *) target_dexes=${target_dexes:+$target_dexes,}$d ;; esac
@@ -195,13 +224,13 @@ if ! apktool_run b -j 1 -f --aapt "$aapt2" "$decode_dir" -o "$rebuild_file" >> "
   die "rebuild failed; full log: $tool_log"
 fi
 progress '4/6' 'Injecting rebuilt classes*.dex into original archive'
-java_helper io.github.hyperosime.DexArchiveInjector "$artifact" "$rebuild_file" "$workdir/archive.apk" "$target_dexes"
+java_helper io.github.soytony.dexpatchhelper.DexArchiveInjector "$artifact" "$rebuild_file" "$workdir/archive.apk" "$target_dexes" >> "$tool_log" 2>&1 || fail_with_log "DEX injection failed for $(basename "$artifact")"
 mkdir -p "$(dirname "$output")"
 progress '5/6' 'Aligning output archive'
-"$zipalign" -f 4 "$workdir/archive.apk" "$output" >/dev/null
-"$zipalign" -c 4 "$output" >/dev/null || die "zipalign verification failed"
+"$zipalign" -f 4 "$workdir/archive.apk" "$output" >> "$tool_log" 2>&1 || fail_with_log "zipalign failed for $(basename "$artifact")"
+"$zipalign" -c 4 "$output" >> "$tool_log" 2>&1 || fail_with_log "zipalign verification failed: $output"
 progress '6/6' 'Verifying DEX and preserved non-DEX entries'
-java_helper io.github.hyperosime.ArchiveVerifier "$artifact" "$output" "$target_dexes"
+java_helper io.github.soytony.dexpatchhelper.ArchiveVerifier "$artifact" "$output" "$target_dexes" >> "$tool_log" 2>&1 || fail_with_log "archive verification failed for $(basename "$artifact")"
 
 output_hash=$(sha256sum "$output" | awk '{print $1}')
 printf 'artifact=%s\noutput_sha256=%s\nprofiles=%s\nprofile_count=%s\ntarget_dexes=%s\n' \

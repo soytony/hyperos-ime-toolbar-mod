@@ -1,12 +1,17 @@
 # Compatibility And Risks
 
-The current installer explicitly recognizes HyperOS version strings beginning
-with `OS3.`, `OS4.`, or `OS5.` on arm64. This is not a promise of compatibility
-with every build in those families: the profile set is intentionally not bound
-to a device product or build fingerprint, and compatibility is determined at
-install time by platform checks plus successful method-signature and local
-anchor matching. A future HyperOS major requires an installer-check update and
-fresh profile validation.
+The installer requires arm64 and treats HyperOS version strings beginning with
+`OS3.` as its validated path. A different value is a warning rather than an
+automatic rejection: the installer displays the detected value and requires a
+volume-up confirmation to try patching. Volume down, or no input within 20
+seconds, cancels the installation. This allows carefully supervised evaluation
+on newer HyperOS releases without presenting them as supported.
+
+This is not a promise of compatibility with every HyperOS 3 build: the profile
+set is intentionally not bound to a device product or build fingerprint, and
+compatibility is determined at install time by platform checks plus successful
+method-signature and local anchor matching. A new system version still needs
+fresh profile and functional validation.
 
 HyperOS releases may rename classes, move them between DEX files, change
 method prototypes, or alter local instruction context. Such changes must fail

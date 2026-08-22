@@ -9,8 +9,9 @@
   `/home/tony/android/lineage/prebuilts/r8/r8.jar`; set `R8_JAR` to override it.
 - Device bundle artifacts named exactly `out/tools/apktool-device.jar`,
   `out/tools/aapt2-arm64-v8a`, and `out/tools/zipalign-arm64-v8a`.
-- A rooted arm64 device reporting HyperOS `OS3.*`, `OS4.*`, or `OS5.*`, with
-  KernelSU and a tested recovery/safe-mode path.
+- A rooted arm64 device with KernelSU and a tested recovery/safe-mode path.
+  HyperOS `OS3.*` is the validated path. Other reported versions require an
+  explicit installation-time confirmation and must be tested by the user.
 
 Build the device helper first; it packages apktool, repository helper classes,
 and D8-generated Android-compatible DEX. Target framework/application smali is
@@ -32,11 +33,15 @@ required binaries into the ZIP. It does not embed device APK/JAR payloads.
 adb -s SERIAL push out/hyperos-ime-toolbar-adaptive.zip /sdcard/Download/
 ```
 
-Install the ZIP from KernelSU. During installation, read the bilingual warning
-and use volume up to enable signature-proof patching or volume down to skip it.
-The prompt waits up to 20 seconds and defaults to skipping the optional patch
-when no key is detected. Reboot after installation. Never manually replace or
-resign the target APK/JAR.
+Install the ZIP from KernelSU. On a system other than HyperOS `OS3.*`, the
+installer first warns that the profile set is unvalidated; volume up continues,
+while volume down or no input in 20 seconds cancels installation. It then asks
+whether to enable signature-proof patching: volume up enables it, and volume
+down or no input in 20 seconds skips it. Reboot after installation. Never
+manually replace or resign the target APK/JAR.
+
+After installation, the module's action button in the KernelSU module list
+opens the Settings fragment containing `全面屏键盘优化`.
 
 ## Verify
 

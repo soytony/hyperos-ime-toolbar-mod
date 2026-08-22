@@ -22,11 +22,28 @@ export TMPDIR=$WORK/tmp
 mkdir -p "$TMPDIR" || abort "Cannot create temporary directory"
 
 ui_print ""
-ui_print "[检查 / CHECK] HyperOS 3.0+、arm64 架构 / HyperOS 3.0+ and arm64"
+ui_print "[检查 / CHECK] 系统版本与 arm64 架构 / System version and arm64 ABI"
 os_name=$(getprop ro.mi.os.version.name)
 abi=$(getprop ro.product.cpu.abi)
-case "$os_name" in OS3.*|OS4.*|OS5.*) ;; *) abort "需要 HyperOS 3.0+；Requires HyperOS 3.0+ (检测到 / detected: $os_name)" ;; esac
 case "$abi" in arm64-v8a|arm64) ;; *) abort "需要 arm64；Requires arm64 (检测到 / detected: $abi)" ;; esac
+
+case "$os_name" in
+  OS3.*)
+    ui_print "HyperOS 3 已检测到 / HyperOS 3 detected: $os_name"
+    ;;
+  *)
+    ui_print ""
+    ui_print "[警告 / WARNING] 未检测到 HyperOS 3 / HyperOS 3 not detected"
+    ui_print "检测到 / Detected: ${os_name:-unknown}"
+    ui_print "此 profile-set 仅在 HyperOS 3 上验证；方法签名不匹配时会中止，但仍可能存在风险。"
+    ui_print "This profile-set is validated only on HyperOS 3; signature mismatches abort, but risk remains."
+    ui_print "音量上键：继续尝试安装 / VOL+: continue installation attempt"
+    ui_print "音量下键或 20 秒无输入：退出 / VOL- or no input in 20s: abort"
+    version_event=$(timeout 20 getevent -ql 2>/dev/null | awk '/KEY_VOLUMEUP/ {print "up"; exit} /KEY_VOLUMEDOWN/ {print "down"; exit}') || true
+    [ "$version_event" = up ] || abort "已取消非 HyperOS 3 安装 / Non-HyperOS-3 installation cancelled"
+    ui_print "已确认继续 / Continue confirmed"
+    ;;
+esac
 
 ui_print ""
 ui_print "[安全确认 / SECURITY PROMPT]"
@@ -99,6 +116,12 @@ while IFS='|' read -r source profiles; do
       --aapt2 "$AAPT2" --zipalign "$ZIPALIGN" --output "$output"; then
     ui_print "[错误 / ERROR] Patch 失败 / Failed: $(basename "$source")"
     ui_print "        日志 / Log: $artifact_work/work/tool.log"
+    if [ -s "$artifact_work/work/tool.log" ]; then
+      ui_print "        最近错误 / Recent details:"
+      tail -20 "$artifact_work/work/tool.log" | while IFS= read -r line; do
+        ui_print "          $line"
+      done
+    fi
     abort "Adaptive patch failed at artifact $artifact_index/4"
   fi
   cp "$artifact_work/work/patch-report.txt" "$MODPATH/reports/$artifact_index.txt" || \
@@ -116,5 +139,6 @@ set_perm "$PATCHER" 0 0 0755 u:object_r:system_file:s0
 set_perm "$AAPT2" 0 0 0755 u:object_r:system_file:s0
 set_perm "$ZIPALIGN" 0 0 0755 u:object_r:system_file:s0
 set_perm "$MODPATH/service.sh" 0 0 0755 u:object_r:system_file:s0
+set_perm "$MODPATH/action.sh" 0 0 0755 u:object_r:system_file:s0
 ui_print ""
 ui_print "[成功 / SUCCESS] 自适应 patch 完成 / Adaptive patch completed"

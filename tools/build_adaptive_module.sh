@@ -31,7 +31,7 @@ cp "$ROOT/tools/adaptive_patcher.sh" "$STAGE/tools/adaptive_patcher.sh"
 cp "$APKTOOL" "$STAGE/tools/apktool-device.jar"
 cp "$AAPT2" "$STAGE/tools/aapt2"
 cp "$ZIPALIGN" "$STAGE/tools/zipalign"
-chmod 0755 "$STAGE/customize.sh" "$STAGE/tools/adaptive_patcher.sh" "$STAGE/tools/aapt2" "$STAGE/tools/zipalign"
+chmod 0755 "$STAGE/customize.sh" "$STAGE/action.sh" "$STAGE/tools/adaptive_patcher.sh" "$STAGE/tools/aapt2" "$STAGE/tools/zipalign"
 
 rm -f "$OUTPUT"
 (cd "$STAGE" && zip -q -r -FS "$OUTPUT" .)

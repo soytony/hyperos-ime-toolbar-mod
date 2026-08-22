@@ -1,4 +1,4 @@
-package io.github.hyperosime;
+package io.github.soytony.dexpatchhelper;
 
 import java.io.*;
 import java.util.HashSet;

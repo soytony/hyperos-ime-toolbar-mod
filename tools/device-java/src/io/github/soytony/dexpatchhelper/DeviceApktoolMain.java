@@ -1,4 +1,4 @@
-package io.github.hyperosime;
+package io.github.soytony.dexpatchhelper;
 
 public final class DeviceApktoolMain {
     private DeviceApktoolMain() {}

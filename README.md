@@ -81,7 +81,8 @@ variants such as `MiuiFrequentPhrase.apk` and `MIUIXxxx.apk`.
 
 - `module-template/`: KernelSU installer, runtime property, and service files.
 - `profile-sets/hyperos3-arm64-3.0/`: current adaptive arm64 profiles and
-  target paths for installer-recognized HyperOS 3, 4, and 5 releases.
+  target paths validated for HyperOS 3; other versions require an explicit
+  installer confirmation before patching is attempted.
 - `tools/adaptive_patcher.sh`: device/host patch orchestration.
 - `tools/device-java/`: apktool wrapper, smali patcher, DEX injector, and
   archive verifier.
@@ -125,14 +126,21 @@ Other device models, regional ROM variants, and HyperOS releases have not been
 validated unless explicitly documented. Users must test compatibility on
 their own devices and be prepared to recover the system before installation.
 
-The current installer accepts arm64 devices whose reported HyperOS version
-starts with `OS3.`, `OS4.`, or `OS5.`. A newer major release requires an
-explicit installer-check update and renewed profile validation. Before
-patching, the installer asks with the volume keys whether to apply the optional
-system APK signature-proof patch. Volume up enables it; volume down skips it,
-and no input within 20 seconds also skips it. EU/custom ROMs may already contain
-that modification. Changing system APKs without the required signature
-behavior can cause a boot loop; keep KernelSU safe mode available.
+The installer requires arm64. It recognizes a reported HyperOS version beginning
+with `OS3.` as the validated path. On every other version (including newer
+HyperOS majors and non-HyperOS ROMs), it shows a warning and requires an
+explicit volume-up confirmation to attempt installation; volume down or no
+input within 20 seconds cancels it. Successful patching only proves that the
+profile signatures and anchors matched, not that the ROM is fully compatible.
+Before patching, the installer separately asks with the volume keys whether to
+apply the optional system APK signature-proof patch. Volume up enables it;
+volume down skips it, and no input within 20 seconds also skips it. EU/custom
+ROMs may already contain that modification. Changing system APKs without the
+required signature behavior can cause a boot loop; keep KernelSU safe mode
+available.
+
+KernelSU shows an action button for the installed module. It opens Settings at
+the Language and input fragment containing the `全面屏键盘优化` controls.
 
 If the device boot-loops, use KernelSU safe mode to disable or remove this
 module before rebooting normally. Confirm that safe-mode recovery is available

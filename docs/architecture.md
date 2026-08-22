@@ -4,7 +4,7 @@
 
 ```text
 KernelSU customize.sh
-  -> validate recognized HyperOS major (OS3/OS4/OS5) and arm64
+  -> require arm64; warn and require confirmation outside HyperOS 3
   -> volume-key choice for signature-proof patch
   -> validate target paths
   -> apktool decode
@@ -48,7 +48,8 @@ The implementation must occur exactly once in the decoded tree.
 Instruction-level patches additionally require a bounded local sequence. The
 optional signature-proof profile searches `services.jar` for
 `getMinimumSignatureSchemeVersionForTargetSdk(I)I`, verifies the following
-`move-result vN`, and resets that same register to zero. Only DEX files that
+`move-result vN`, and overrides that same typed result register to zero using
+the generic `replace-method-result-all` operation. Only DEX files that
 contain a match are selected for replacement.
 
 ## Archive preservation
