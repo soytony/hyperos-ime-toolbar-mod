@@ -29,14 +29,29 @@ case "$abi" in arm64-v8a|arm64) ;; *) abort "需要 arm64；Requires arm64 (检�
 
 case "$os_name" in
   OS3.*)
+    [ -d "$MODPATH/profile-sets/hyperos3-arm64-3.0" ] && SET=$MODPATH/profile-sets/hyperos3-arm64-3.0
     ui_print "HyperOS 3 已检测到 / HyperOS 3 detected: $os_name"
+    ;;
+  OS4.*)
+    if [ -d "$MODPATH/profile-sets/hyperos4-arm64-4.0" ]; then
+      SET=$MODPATH/profile-sets/hyperos4-arm64-4.0
+      ui_print ""
+      ui_print "[警告 / WARNING] HyperOS 4 profile-set 为实验版本 / experimental"
+      ui_print "该 profile-set 已包含 HyperOS 4 的 IME toolbar 目标，但仍属实验版本。"
+      ui_print "This set includes HyperOS 4 IME toolbar targets but remains experimental."
+      ui_print "音量上键：继续实验性安装 / VOL+: continue experimental installation"
+      ui_print "音量下键或 20 秒无输入：退出 / VOL- or no input in 20s: abort"
+      version_event=$(timeout 20 getevent -ql 2>/dev/null | awk '/KEY_VOLUMEUP/ {print "up"; exit} /KEY_VOLUMEDOWN/ {print "down"; exit}') || true
+      [ "$version_event" = up ] || abort "已取消 HyperOS 4 实验安装 / HyperOS 4 experimental installation cancelled"
+      ui_print "HyperOS 4 profile-set selected / 已选择 HyperOS 4 profile-set"
+    fi
     ;;
   *)
     ui_print ""
     ui_print "[警告 / WARNING] 未检测到 HyperOS 3 / HyperOS 3 not detected"
     ui_print "检测到 / Detected: ${os_name:-unknown}"
-    ui_print "此 profile-set 仅在 HyperOS 3 上验证；方法签名不匹配时会中止，但仍可能存在风险。"
-    ui_print "This profile-set is validated only on HyperOS 3; signature mismatches abort, but risk remains."
+    ui_print "对应版本 profile-set 未完成验证；方法签名不匹配时会中止，但仍可能存在风险。"
+    ui_print "The version profile-set is not fully validated; signature mismatches abort, but risk remains."
     ui_print "音量上键：继续尝试安装 / VOL+: continue installation attempt"
     ui_print "音量下键或 20 秒无输入：退出 / VOL- or no input in 20s: abort"
     version_event=$(timeout 20 getevent -ql 2>/dev/null | awk '/KEY_VOLUMEUP/ {print "up"; exit} /KEY_VOLUMEDOWN/ {print "down"; exit}') || true
@@ -60,6 +75,9 @@ if [ "$choice" = apply ]; then
   sig_profile=$SET/profiles/signature-proof
   [ -d "$sig_profile" ] || abort "缺少签名 patch profile / Missing signature profile"
   signature_profiles=$sig_profile
+  if [ -d "$SET/profiles/signature-proof-session" ]; then
+    signature_profiles=$signature_profiles,$SET/profiles/signature-proof-session
+  fi
 else
   ui_print "签名校验 patch：跳过 / Signature proof patch: skipped"
   signature_profiles=
@@ -86,7 +104,8 @@ while IFS='|' read -r source profiles; do
   [ -n "$profiles" ] || abort "No profiles configured for $source"
 done < "$SET/plan.conf"
 
-ui_print "- 应用 smali profiles（4 个文件）/ Applying profiles (4 artifacts)"
+artifact_total=$(awk -F'|' '$1 !~ /^($|#)/ {count++} END {print count + 0}' "$SET/plan.conf")
+ui_print "- 应用 smali profiles（${artifact_total} 个文件）/ Applying profiles (${artifact_total} artifacts)"
 artifact_index=0
 while IFS='|' read -r source profiles; do
   case "$source" in ''|'#'*) continue ;; esac
@@ -101,7 +120,7 @@ while IFS='|' read -r source profiles; do
   output=$artifact_work/result.$archive_suffix
   profile_total=$(printf '%s' "$profiles" | awk -F, '{print NF}')
   ui_print ""
-  ui_print "[$artifact_index/4] $(basename "$source")"
+  ui_print "[$artifact_index/$artifact_total] $(basename "$source")"
   ui_print "  目标已确认；profiles: $profile_total / Target verified; profiles: $profile_total"
   old_ifs=$IFS
   IFS=','

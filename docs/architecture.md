@@ -4,7 +4,8 @@
 
 ```text
 KernelSU customize.sh
-  -> require arm64; warn and require confirmation outside HyperOS 3
+  -> require arm64; select versioned profile set; warn and require confirmation
+     for unknown versions
   -> volume-key choice for signature-proof patch
   -> validate target paths
   -> apktool decode

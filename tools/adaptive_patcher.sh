@@ -66,6 +66,7 @@ done
 [ -n "$profiles" ] || usage
 [ -f "$artifact" ] || die "artifact does not exist: $artifact"
 [ -f "$apktool" ] || die "missing apktool jar: $apktool"
+source_hash=$(sha256sum "$artifact" | awk '{print $1}')
 
 get_profile() {
   profile_dir=$1
@@ -98,8 +99,9 @@ workdir=$(CDPATH= cd -- "$workdir" && pwd)
 mkdir -p "$workdir/home"
 decode_dir=$workdir/decoded
 rebuild_file=$workdir/rebuilt.apk
+build_source=$decode_dir
 tool_log=$workdir/tool.log
-rm -rf "$decode_dir" "$rebuild_file" "$workdir/archive.apk" "$workdir/aligned.apk" "$workdir/patch-report.txt"
+rm -rf "$decode_dir" "$rebuild_file" "$workdir/rebuild-source" "$workdir/archive.apk" "$workdir/aligned.apk" "$workdir/patch-report.txt"
 : > "$tool_log"
 
 progress '1/6' "Decoding $(basename "$artifact")"
@@ -130,7 +132,11 @@ for profile_dir in $profiles; do
   esac
   if [ "$operation" = replace-method-result-all ]; then
     anchor=$(get_profile "$profile_dir" anchor)
-    class_file=$(grep -rlF "$anchor" "$decode_dir" --include='*.smali' 2>/dev/null | sed -n '1p')
+    if [ "$class_name" = '*' ]; then
+      class_file=$(grep -rlF "$anchor" "$decode_dir" --include='*.smali' 2>/dev/null | sed -n '1p')
+    else
+      class_file=$(find "$decode_dir" -type f -name "$(basename "$class_name").smali" -path "*${class_name%/*}/*" -print -quit 2>/dev/null)
+    fi
   else
     class_file=$(find "$decode_dir" -type f -name "$(basename "$class_name").smali" -path "*${class_name%/*}/*" -print -quit 2>/dev/null)
   fi
@@ -149,7 +155,11 @@ for profile_dir in $profiles; do
   if [ "$operation" = replace-method-result-all ]; then
     anchor_count=0
     candidate_list=$workdir/candidates.txt
-    find "$decode_dir" -type f -name '*.smali' -print > "$candidate_list"
+    if [ "$class_name" = '*' ]; then
+      find "$decode_dir" -type f -name '*.smali' -print > "$candidate_list"
+    else
+      printf '%s\n' "$class_file" > "$candidate_list"
+    fi
     while IFS= read -r candidate; do
       count=$(grep -Fo "$anchor" "$candidate" 2>/dev/null | wc -l | tr -d ' ')
       anchor_count=$((anchor_count + count))
@@ -196,7 +206,11 @@ for profile_dir in $profiles; do
       return_type=$(get_profile "$profile_dir" return_type)
       value=$(get_profile "$profile_dir" value)
       candidate_list=$workdir/candidates.txt
-      find "$decode_dir" -type f -name '*.smali' -print > "$candidate_list"
+      if [ "$class_name" = '*' ]; then
+        find "$decode_dir" -type f -name '*.smali' -print > "$candidate_list"
+      else
+        printf '%s\n' "$class_file" > "$candidate_list"
+      fi
       while IFS= read -r candidate; do
         if grep -Fq "$anchor" "$candidate"; then
           candidate_relative=${candidate#"$decode_dir"/}
@@ -219,7 +233,26 @@ chmod 0755 "$aapt2" "$zipalign"
 
 progress 'DEX' "Target DEX: $target_dexes"
 progress '3/6' 'Rebuilding temporary DEX source'
-if ! apktool_run b -j 1 -f --aapt "$aapt2" "$decode_dir" -o "$rebuild_file" >> "$tool_log" 2>&1; then
+case "$artifact" in
+*.jar)
+  build_source=$workdir/rebuild-source
+  mkdir -p "$build_source"
+  cp "$decode_dir/apktool.yml" "$build_source/apktool.yml"
+  old_ifs=$IFS
+  IFS=','
+  for dex in $target_dexes; do
+    case "$dex" in
+      classes.dex) smali_dir=smali ;;
+      classes[0-9]*.dex) smali_dir=smali_classes${dex#classes}; smali_dir=${smali_dir%.dex} ;;
+      *) die "cannot map target DEX to smali directory: $dex" ;;
+    esac
+    [ -d "$decode_dir/$smali_dir" ] || die "missing changed smali directory: $smali_dir"
+    cp -R "$decode_dir/$smali_dir" "$build_source/"
+  done
+  IFS=$old_ifs
+  ;;
+esac
+if ! apktool_run b -j 1 -f --aapt "$aapt2" "$build_source" -o "$rebuild_file" >> "$tool_log" 2>&1; then
   tail -40 "$tool_log" >&2
   die "rebuild failed; full log: $tool_log"
 fi

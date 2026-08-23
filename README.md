@@ -80,13 +80,17 @@ variants such as `MiuiFrequentPhrase.apk` and `MIUIXxxx.apk`.
 ## Repository layout
 
 - `module-template/`: KernelSU installer, runtime property, and service files.
-- `profile-sets/hyperos3-arm64-3.0/`: current adaptive arm64 profiles and
-  target paths validated for HyperOS 3; other versions require an explicit
-  installer confirmation before patching is attempted.
+- `profile-sets/hyperos3-arm64-3.0/`: validated HyperOS 3 arm64 profiles.
+- `profile-sets/hyperos4-arm64-4.0/`: isolated HyperOS 4 arm64 experimental
+  set; contains only profiles with confirmed declarations, while changed core
+  service/phrase signatures are being reverse-engineered. The installer selects
+  by OS major version and never falls back across version sets.
 - `tools/adaptive_patcher.sh`: device/host patch orchestration.
 - `tools/device-java/`: apktool wrapper, smali patcher, DEX injector, and
   archive verifier.
 - `tools/build_adaptive_module.sh`: reproducible module ZIP builder.
+- `tools/validate_profile_sets.sh`: validates version-set plans and
+  `expected_matches` semantics before packaging.
 - `tools/build_device_apktool.sh`: builds the device-side apktool helper JAR.
 - `tools/analyze_ime_colors.py`: optional color-validation utility.
 - `docs/`: architecture, design, compatibility, and installation notes.

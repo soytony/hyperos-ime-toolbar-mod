@@ -100,7 +100,11 @@ retained at the artifact work directory as `work/tool.log`.
 1. Decode the mounted source archive with apktool.
 2. Apply every selected smali profile.
 3. Map changed `smali_classesN/` directories back to `classesN.dex`.
-4. Rebuild a temporary archive.
+4. For JAR inputs, rebuild a temporary Apktool source containing only the
+   changed smali directories. This avoids recompiling unrelated framework
+   DEX files, which can abort on-device for large HyperOS 4 `services.jar`.
+   APK inputs retain the complete decoded source because resources and the
+   manifest are required by the APK rebuild.
 5. Copy the original ZIP and replace only selected DEX entries.
 6. Run `zipalign -f 4`.
 7. Verify all non-target DEX entries and all non-DEX ZIP entries are preserved.
@@ -122,6 +126,10 @@ errors are displayed
 in Chinese and English with blank lines between major phases.
 
 ## Maintenance checklist
+
+Before packaging, run `tools/validate_profile_sets.sh`. It checks that every
+plan entry has a profile directory and that `expected_matches=all` is restricted
+to all-occurrence operations.
 
 - [x] Keep product names and build fingerprints out of the module.
 - [x] Avoid whole APK/JAR and whole-method hashes for compatibility matching.

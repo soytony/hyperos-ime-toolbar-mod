@@ -1,13 +1,15 @@
 # Compatibility And Risks
 
-The installer requires arm64 and treats HyperOS version strings beginning with
-`OS3.` as its validated path. A different value is a warning rather than an
+The installer requires arm64 and selects a versioned profile set. `OS3.*`
+selects the validated `hyperos3-arm64-3.0` set. `OS4.*` selects the separate
+experimental `hyperos4-arm64-4.0` set and requires a separate volume-up
+confirmation. A different value is a warning rather than an
 automatic rejection: the installer displays the detected value and requires a
 volume-up confirmation to try patching. Volume down, or no input within 20
-seconds, cancels the installation. This allows carefully supervised evaluation
-on newer HyperOS releases without presenting them as supported.
+seconds, cancels the installation. There is no fallback from one major
+version's profiles to another.
 
-This is not a promise of compatibility with every HyperOS 3 build: the profile
+This is not a promise of compatibility with every HyperOS 3 or HyperOS 4 build: the profile
 set is intentionally not bound to a device product or build fingerprint, and
 compatibility is determined at install time by platform checks plus successful
 method-signature and local anchor matching. A new system version still needs

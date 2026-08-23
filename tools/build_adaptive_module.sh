@@ -27,6 +27,14 @@ rm -rf "$STAGE"
 mkdir -p "$STAGE/tools"
 cp -R "$ROOT/module-template/." "$STAGE/"
 cp -R "$PROFILE_SET" "$STAGE/profile-set"
+# Ship sibling version sets so customize.sh can select by the device OS.
+PROFILE_ROOT=$(dirname "$PROFILE_SET")
+mkdir -p "$STAGE/profile-sets"
+for sibling in "$PROFILE_ROOT"/*; do
+  [ -d "$sibling" ] || continue
+  [ "$sibling" = "$PROFILE_SET" ] && continue
+  cp -R "$sibling" "$STAGE/profile-sets/$(basename "$sibling")"
+done
 cp "$ROOT/tools/adaptive_patcher.sh" "$STAGE/tools/adaptive_patcher.sh"
 cp "$APKTOOL" "$STAGE/tools/apktool-device.jar"
 cp "$AAPT2" "$STAGE/tools/aapt2"
